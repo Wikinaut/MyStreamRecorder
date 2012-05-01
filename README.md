@@ -1,8 +1,10 @@
 MyStreamRecorder
 ================
 
-MyStreamRecorder is a simple LINUX commandline-based stream recorder
+MyStreamRecorder is a free simple LINUX commandline-based stream recorder
 and scheduler with e-mail-notification.
+
+It has been developed and tested on OpenSuse 12.1.
 
 The basic usage is
 ```

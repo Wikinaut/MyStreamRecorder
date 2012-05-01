@@ -46,7 +46,7 @@ fuser -k <fn> kill record and playback jobs which own streamfile <fn>
 # Usage  
 (output of rec.php --help)  
 <pre>
-MyStreamRecorder  v2.11 20120501 -- usage:
+MyStreamRecorder v2.11 20120501 -- usage:
 
    php rec.php
 

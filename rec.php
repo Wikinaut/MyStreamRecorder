@@ -6,6 +6,8 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *
  *	My Stream Recorder
  *
+ *      developed and tested with OpenSuse 12.1
+ *
  * 	records and/or plays a stream from starttime to stoptime
  * 	playback while recording is default (disable with --noplayback)
  *
@@ -412,7 +414,7 @@ if ( $kill ) {
 }
 
 if ( $showVersion ) {
-	echo PROGRAM_NAME . "  " . VERSION . "\n";
+	echo PROGRAM_NAME . " " . VERSION . "\n";
 	die();
 }
 

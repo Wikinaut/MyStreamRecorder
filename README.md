@@ -5,13 +5,19 @@ MyStreamRecorder is a simple LINUX commandline-based stream recorder
 and scheduler with e-mail-notification.
 
 The basic usage is
-  php rec.php <streamname>
+```
+php rec.php <streamname>
+``` 
 or
-  php rec.php --playonly <streamname>
+```
+php rec.php --playonly <streamname>
+```
 
 See
-  php rec.php
-for a detailed help
+```
+php rec.php
+```
+for detailed help.
 
 Requirements
 ============

@@ -1,26 +1,26 @@
 <?PHP
-define( "VERSION", "v2.11 20120501" );
+define( "VERSION", "v2.12 20120504" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
  *
  *	My Stream Recorder
  *
- *      developed and tested with OpenSuse 12.1
+ *	developed and tested with OpenSuse 12.1
  *
- * 	records and/or plays a stream from starttime to stoptime
- * 	playback while recording is default (disable with --noplayback)
+ *	records and/or plays a stream from starttime to stoptime
+ *	playback while recording is default (disable with --noplayback)
  *
- * 	starting now or at a given starttime
- * 	for a given recording time or until a given stoptime
+ *	starting now or at a given starttime
+ *	for a given recording time or until a given stoptime
  *
- * 	pre-programmed stationnames or streamurls
- * 	creates a batch file for killing all scheduled jobs
+ *	pre-programmed stationnames or streamurls
+ *	creates a batch file for killing all scheduled jobs
  *
  *	licensed under the MIT and GPL and CC-BY licenses:
  *	http://www.opensource.org/licenses/mit-license.php
  *	http://www.gnu.org/licenses/gpl.html
- * 
+ *
  *	The software and documentation is licensed under:
  *
  *	Creative Commons Attribution 3.0 Unported License
@@ -28,11 +28,11 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *	MIT/X11 http://www.opensource.org/licenses/mit-license.php
  *	GPL http://www.gnu.org/licenses/gpl.html
  *
- * 	License for the sound file included in this distribution:
+ *	License for the sound file included in this distribution:
  *
- *	https://commons.wikimedia.org/wiki/File:Quindar_tones.ogg 
- *      (c) by Benscripps (Own work) 
- *	CC-BY-SA-3.0 (www.creativecommons.org/licenses/by-sa/3.0) or 
+ *	https://commons.wikimedia.org/wiki/File:Quindar_tones.ogg
+ *      (c) by Benscripps (Own work)
+ *	CC-BY-SA-3.0 (www.creativecommons.org/licenses/by-sa/3.0) or
  *	GFDL (www.gnu.org/copyleft/fdl.html)], via Wikimedia Commons
  *
  *	Copyright 2011-2012 (c) Thomas Gries
@@ -48,6 +48,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  * 	20111027 2.09	-q quiet = no sounds; -V = verbose
  * 	20111120 2.10	audiodriver alsa ( -ao alsa); before it was -ao oss
  *      20120501 2.11   added license information
+ * 	20120504 2.12	added info to start postfix
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -59,6 +60,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *			$ rcatd start
  *                      or have at started in Runlevel 5
  * 			http://www.simplehelp.net/2009/05/04/how-to-schedule-tasks-on-linux-using-the-at-command/
+ *	requires	that postfix is running (check with "postfix status")
  *
  * 	required system commands:
  *
@@ -67,10 +69,12 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  * 	fuser -k <fn>	kill record and playback jobs which own streamfile <fn>
  *
  * 	TODO / FIXME
+ *
  * 	playback while recording: check if stream exists then play it immediately
  * 	when --directory was given for scheduling a recording, the killall file cannot be accessed with php rec.php -s (because the directory is missing there!
  * 	check working directory access and execution permissions for files
  * 	sanitize all users input, especially filenames to prevent path traversal
+ *	check if postfix is running
  *
 ***/
 
@@ -121,7 +125,7 @@ $defaultMailto = "root@localhost";
 # this can be enabled with -b or --beep option
 #
 # License for the sound file
-# https://commons.wikimedia.org/wiki/File:Quindar_tones.ogg by Benscripps (Own work) 
+# https://commons.wikimedia.org/wiki/File:Quindar_tones.ogg by Benscripps (Own work)
 # CC-BY-SA-3.0 (www.creativecommons.org/licenses/by-sa/3.0) or GFDL (www.gnu.org/copyleft/fdl.html)], via Wikimedia Commons
 $startMessageSound = "Quindar_tones.ogg";
 

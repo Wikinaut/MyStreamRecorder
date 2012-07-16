@@ -27,7 +27,7 @@ see also file rec.php
 
 * PHP 5.3.0+ (for getopt --long-options)
 
-* "mplayer" for recording a stream
+* "mplayer" for recording a stream ( http://www.mplayerhq.hu )
 
 * server time synchronised via "ntp"
 ```

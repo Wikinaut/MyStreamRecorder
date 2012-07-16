@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.12 20120504" );
+define( "VERSION", "v2.13 20120716" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -49,6 +49,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  * 	20111120 2.10	audiodriver alsa ( -ao alsa); before it was -ao oss
  *      20120501 2.11   added license information
  * 	20120504 2.12	added info to start postfix
+ *      20120716 2.13   added Radio B2
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -60,7 +61,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *			$ rcatd start
  *                      or have at started in Runlevel 5
  * 			http://www.simplehelp.net/2009/05/04/how-to-schedule-tasks-on-linux-using-the-at-command/
- *	requires	that postfix is running (check with "postfix status")
+ *	requires	postfix must be running (check with "postfix status") if you want to use the e-mail notification
  *
  * 	required system commands:
  *
@@ -290,6 +291,11 @@ $preprogrammedStations = array (
 			"url" => "http://85.239.108.41/90elf_basis_hq",
 			"code" => ".mp3",
 			"homepage" => "http://www.90elf.de/"
+		),
+		array( "name" => array( "radio-b2-berlin-brandenburg", "b2" ),
+			"url" => "http://www.digitalradiostream.de:9090/listen.pls",
+			"code" => ".mp3",
+			"homepage" => "http://www.radiob2.de/"
 		),
 );
 

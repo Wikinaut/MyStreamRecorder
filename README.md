@@ -26,17 +26,21 @@ for detailed help.
 see also file rec.php
 
 * PHP 5.3.0+ (for getopt --long-options)
+
 * "mplayer" for recording a stream
+
 * server time synchronised via "ntp"
 ```
 $rcntp start
 ```
 or have "ntp" started in Runlevel 5; make sure to have a working ntp server defined in ntp configuration file
+
 * "at" for starting and stopping stream recording
 ```
 $ rcatd start
 ```
 or have "at" started in Runlevel 5 (see http://www.simplehelp.net/2009/05/04/how-to-schedule-tasks-on-linux-using-the-at-command/)
+
 * required system commands:
 ```
 "atq" to list the queued "at" commands

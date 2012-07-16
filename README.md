@@ -2,9 +2,9 @@ MyStreamRecorder
 ================
 
 MyStreamRecorder is a free simple LINUX commandline-based stream recorder
-and scheduler with e-mail-notification.
+and a scheduler with optional e-mail-notification when recording has finished.
 
-It has been developed and tested on OpenSuse 12.1.
+It uses "mplayer" for recording and playing internet streams and has been developed and tested on OpenSuse 12.1.
 
 The basic usage is
 ```
@@ -26,17 +26,21 @@ for detailed help.
 see also file rec.php
 
 * PHP 5.3.0+ (for getopt --long-options)
-* mplayer for recording a stream
+* "mplayer" for recording a stream
 
 * exact server time synchronised via "ntp"
+```
 $rcntp start
-or have ntp started in Runlevel 5
+```
+or have "ntp" started in Runlevel 5
 make sure to have a working ntp server defined in ntp configuration file
 
 * requires "at" for starting and stopping stream recording
+```
 $ rcatd start
-or have at started in Runlevel 5
-http://www.simplehelp.net/2009/05/04/how-to-schedule-tasks-on-linux-using-the-at-command/
+```
+or have "at" started in Runlevel 5 (see http://www.simplehelp.net/2009/05/04/how-to-schedule-tasks-on-linux-using-the-at-command/)
+
 
 * required system commands:
 atq list the queued "at" commands
@@ -120,6 +124,7 @@ MyStreamRecorder -- usage:
    P8 : multicult multicultfm multicult2.0 mc - http://www.multicult.fm/
    P9 : radionova novaradio novaplanet nova - http://www.novaplanet.com/
    P10: 90elf - http://www.90elf.de/
+   P11: radio-b2-berlin-brandenburg b2 - http://www.radiob2.de/
 
    administrative information:
 

@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.13 20120716" );
+define( "VERSION", "v2.14 20120729" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -50,6 +50,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *      20120501 2.11   added license information
  * 	20120504 2.12	added info to start postfix
  *      20120716 2.13   added Radio B2
+ *	20120729 2.14	let sendmail use the actual send date
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -193,8 +194,8 @@ $escFilename
 
 filesize in bytes:";
 
-	$headers = "Date: " . date("r") . "\n" .
-		"MIME-Version: 1.0\n" .
+//	$headers = "Date: " . date("r") . "\n" .
+	$headers = "MIME-Version: 1.0\n" .
 		"Content-type: text/plain; charset=UTF-8\n" .
 		"Content-Transfer-Encoding: 8bit\n" .
 		"X-Mailer: " . PROGRAM_NAME . " " . VERSION . "\n" .
@@ -292,7 +293,7 @@ $preprogrammedStations = array (
 			"code" => ".mp3",
 			"homepage" => "http://www.90elf.de/"
 		),
-		array( "name" => array( "radio-b2-berlin-brandenburg", "b2" ),
+		array( "name" => array( "radiob2", "radio-b2", "radio-b2-berlin-brandenburg", "b2" ),
 			"url" => "http://www.digitalradiostream.de:9090/listen.pls",
 			"code" => ".mp3",
 			"homepage" => "http://www.radiob2.de/"
@@ -750,6 +751,7 @@ if ( !$noPlayback ) switch ( true ) {
 # or kills all mplayer jobs when only playing (we do not know the jobid of the specific player when scheduling the kill job)
 
 $killRecordingAndPlaybackStopJob = "";
+
 $mailJob = ( $mailto ) ? "; (cat $mailFilename;stat -c %s $escFilename) | /usr/sbin/sendmail -t ; rm -f $mailFilename" : "";
 
 $rmSingleKillJobFile = ";rm -f $killSingleJobFilename $nul";

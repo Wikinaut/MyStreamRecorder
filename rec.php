@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.14 20120729" );
+define( "VERSION", "v2.16 20120731" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -51,6 +51,9 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  * 	20120504 2.12	added info to start postfix
  *      20120716 2.13   added Radio B2
  *	20120729 2.14	let sendmail use the actual send date
+ *	20120730 2.15	fix to remove some spurious cron output
+ *	20120731 2.16	adding label option to add a short description
+ *			sanitize filenames to prevent path traversal
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -75,8 +78,9 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  * 	playback while recording: check if stream exists then play it immediately
  * 	when --directory was given for scheduling a recording, the killall file cannot be accessed with php rec.php -s (because the directory is missing there!
  * 	check working directory access and execution permissions for files
- * 	sanitize all users input, especially filenames to prevent path traversal
  *	check if postfix is running
+ *	parameter files stationlist and program defaults
+ *	check available disk space before scheduling and show or send a warning
  *
 ***/
 
@@ -228,7 +232,7 @@ function changeTimeToDuration( $time ) {
 	default: // treat as regular time
 		$ret = false;
 	};
-return $ret;
+	return $ret;
 }
 
 function isPreprogrammedStation( $name, $haystack ) {
@@ -237,7 +241,14 @@ function isPreprogrammedStation( $name, $haystack ) {
 			return $k;
 		}
 	}
-return false;
+	return false;
+}
+
+# proper sanitizing filenames is a hard job.
+# http://stackoverflow.com/questions/2668854/sanitizing-strings-to-make-them-url-and-filename-safe
+# we use a whitelist for the moment and remove anything else
+function sanitize_filename( $fn ) {
+	return preg_replace( "![^a-z0-9 _-]!i", "", $fn );
 }
 
 $preprogrammedStations = array (
@@ -245,57 +256,57 @@ $preprogrammedStations = array (
 		# the order determines the program P number P1, P2 ...
 		array( "name" => array( "dradiokultur", "deutschlandradiokultur", "dradio", "deutschlandradio", "dkultur", "drk", "dr" ),
 			"url" => "http://dradio.ic.llnwd.net/stream/dradio_dkultur_m_a.ogg",
-			"code" => ".ogg",
+			"encodingtype" => "ogg",
 			"homepage" => "http://www.dradio.de/dkultur/"
 		),
 		array( "name" => array( "kulturradio", "rbbkulturradio", "kulturradiorbb", "kradio", "kr", "rbb" ),
 			"url" => "http://kulturradio.de/livemp3",
-			"code" => ".mp3",
+			"encodingtype" => "mp3",
 			"homepage" => "http://www.kulturradio.de/"
 		),
 		array( "name" => array( "deutschlandfunk", "dlf", "df" ),
 			"url" => "http://dradio.ic.llnwd.net/stream/dradio_dlf_m_a.ogg",
-			"code" => ".ogg",
+			"encodingtype" => "ogg",
 			"homepage" => "http://www.dradio.de/dlf/"
 		),
 		array( "name" => array( "funkhauseuropa", "fhe", "wdrfunkhauseuropa" ),
 			"url" => "http://gffstream.ic.llnwd.net/stream/gffstream_w20a",
-			"code" => ".mp3",
+			"encodingtype" => "mp3",
 			"homepage" => "http://www.funkhaus-europa.de/"
 		),
 		array( "name" => array( "radioeins", "radio1", "rbbradioeins", "re", "r1" ),
 			"url" => "http://radioeins.de/livemp3",
-			"code" => ".mp3",
+			"encodingtype" => "mp3",
 			"homepage" => "http://www.radioeins.de/"
 		),
 		array( "name" => array( "dradiowissen", "drwissen", "drw" ),
 			"url" => "http://dradio.ic.llnwd.net/stream/dradio_dwissen_m_a.ogg",
-			"code" => ".ogg",
+			"encodingtype" => "ogg",
 			"homepage" => "http://wissen.dradio.de/"
 		),
 		array( "name" => array( "deutschewelle", "dwelle", "dw" ),
 			"url" => "http://c13010-ls.i.core.cdn.streamfarm.net/dwworldlive-live/13010dwrde64.mp3",
-			"code" => ".mp3",
+			"encodingtype" => "mp3",
 			"homepage" => "http://www.dwelle.de/"
 		),
 		array( "name" => array( "multicult", "multicultfm", "multicult2.0", "mc"),
 			"url" => "http://stream.multicult.fm:8000/hifi",
-			"code" => ".mp3",
+			"encodingtype" => "mp3",
 			"homepage" => "http://www.multicult.fm/"
 		),
 		array( "name" => array( "radionova", "novaradio", "novaplanet", "nova" ),
 			"url" => "http://broadcast.infomaniak.net:80/radionova-high.mp3",
-			"code" => ".mp3",
+			"encodingtype" => "mp3",
 			"homepage" => "http://www.novaplanet.com/"
 		),
 		array( "name" => array( "90elf" ),
 			"url" => "http://85.239.108.41/90elf_basis_hq",
-			"code" => ".mp3",
+			"encodingtype" => "mp3",
 			"homepage" => "http://www.90elf.de/"
 		),
 		array( "name" => array( "radiob2", "radio-b2", "radio-b2-berlin-brandenburg", "b2" ),
 			"url" => "http://www.digitalradiostream.de:9090/listen.pls",
-			"code" => ".mp3",
+			"encodingtype" => "mp3",
 			"homepage" => "http://www.radiob2.de/"
 		),
 );
@@ -330,6 +341,7 @@ $parameters = array(
 	"h" => "help",
 	"q" => "quiet",
 	"k" => "killall",
+	"l:" => "label:",
 	"s" => "stop",
 	"m::" => "mailto::",
 	"o:" => "output:",
@@ -363,6 +375,22 @@ case ( !empty( $options["output"] ) ):
 	break;
 default:
 	$fn = false;
+}
+
+switch ( true ) {
+case ( !empty( $options["l"] ) ):
+	$label = $options["l"];
+	break;
+case ( !empty( $options["label"] ) ):
+	$label = $options["label"];
+	break;
+default:
+	$label = "";
+}
+
+$label = str_replace( " ", "_", trim( $label, " _-." ) );
+if ( strlen( $label ) > 0 ) {
+	$label = "_" . $label;
 }
 
 # check the working directory. Files in it need to be executable,
@@ -481,13 +509,13 @@ if ( !empty( $argv[1] ) ) {
 		$streamUrl = $preprogrammed["url"];
 		$stationName = $preprogrammed["name"][1]; // use the first ["name"][1], not the program P number ["name"][0]
 		if ( !$fn ) {
-			$fn = $stationName . $preprogrammed["code"];
+			$fn = sanitize_filename( $stationName . $label ) . "." . $preprogrammed["encodingtype"];
 		}
 	} else if ( preg_match( "!^http://!", $station ) ) {
 		// FIXME
 		// check whether streamUrl exists
 		$streamUrl = $station;
-		$stationName = str_replace( array( "http://", basename( $streamUrl ), "/", "." ), array( "", "", "-", "-" ), $station ) . basename( $streamUrl );
+		$stationName = sanitize_filename( str_replace( array( "http://", basename( $streamUrl ), "/", "." ), array( "", "", "-", "-" ), $station ) . $label ) . basename( $streamUrl );
 		if ( !$fn ) {
 			$fn = $stationName;
 		}
@@ -511,6 +539,7 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
        [-q|--quiet]
        [-h|--help]
        [-k|--killall] [-s|--stop]
+       [-l<label>|--label=<label>]
        [-m<addr>|--mailto=<addr>]
        [-o<fn>|--output=<fn>]
        [-d<dir>|--directory=<dir>]
@@ -525,12 +554,14 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
 
    Recording starts about $preRecordingTime seconds before the start time and stops about $postRecordingTime seconds after the stop time.
    $playbackInfo
-   --beep enables beep tones when recording starts or stops.
-   --playonly disables recording and plays the stream now or at scheduled times
-   --mailto=<addr> sends a mail when recording has finished to mailaddress <addr> (default: $defaultMailto)
-   --quiet fully disables screen output
-   --silent fully disables sounds while recording
-   --output=<fn> user defined recording filename
+
+   --beep            enables beep tones when recording starts or stops.
+   --playonly        disables recording and plays the stream now or at scheduled times
+   --mailto=<addr>   sends a mail when recording has finished to mailaddress <addr> (default: $defaultMailto)
+   --quiet           fully disables screen output
+   --silent          fully disables sounds while recording
+   --label=<label>   additional text which is added to the filename
+   --output=<fn>     user defined recording filename
    --directory=<dir> user defined working directory
 
    examples:
@@ -538,7 +569,7 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
    php rec.php nova
    php rec.php --playonly dradio 10min
    php rec.php --noplayback kulturradio 20:00 21:30
-   php rec.php -b dradio 201112312000 201112312200
+   php rec.php -b --label=\"classical concert\" dradio 201112312000 201112312200
    php rec.php http://radioeins.de/livemp3 01:00 2h
    php rec.php --directory=/tmp --output=Dradio-Wissen_News.ogg drwissen 30m
    php rec.php --mailto=mail@example.com dradio
@@ -592,11 +623,6 @@ $error";
  * 3. kill any pending mplayer recording or playing job: # killall mplayer
  ***/
 	die();
-}
-
-# create a default filename for recording
-if ( !empty( $outputFilename ) ) {
-	$fn =$outputFilename;
 }
 
 # adjust startTime only if startTime is not zero (zero means immediate start)
@@ -752,14 +778,14 @@ if ( !$noPlayback ) switch ( true ) {
 
 $killRecordingAndPlaybackStopJob = "";
 
-$mailJob = ( $mailto ) ? "; (cat $mailFilename;stat -c %s $escFilename) | /usr/sbin/sendmail -t ; rm -f $mailFilename" : "";
+$mailJob = ( $mailto ) ? "; (cat $mailFilename;stat -c %s $escFilename) | /usr/sbin/sendmail -t $nul; rm -f $mailFilename " : "";
 
 $rmSingleKillJobFile = ";rm -f $killSingleJobFilename $nul";
 
 switch ( true ) {
 
 	case ( $record && !$immediateStart && ( $playbackStartDelay > 0) ):
-		exec( "echo \"fuser -k {$escFilename}{$stopRecordingHook}{$mailJob} {$nul}{$rmSingleKillJobFile}\" \
+		exec( "echo \"fuser -k {$escFilename} $nul {$stopRecordingHook}{$mailJob} $nul {$rmSingleKillJobFile}\" \
 			| at " . date( $atDateformat, $stopTime ) . " 2>&1",
 			$out3
 		);

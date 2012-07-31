@@ -62,6 +62,7 @@ MyStreamRecorder -- usage:
        [-q|--quiet]
        [-h|--help]
        [-k|--killall] [-s|--stop]
+       [-l<label>|--label=<label>]
        [-m<addr>|--mailto=<addr>]
        [-o<fn>|--output=<fn>]
        [-d<dir>|--directory=<dir>]
@@ -76,12 +77,14 @@ MyStreamRecorder -- usage:
 
    Recording starts about 60 seconds before the start time and stops about 60 seconds after the stop time.
    Playback starts about 60 seconds after the recording (--noplayback disables playback while recording).
-   --beep enables beep tones when recording starts or stops.
-   --playonly disables recording and plays the stream now or at scheduled times
-   --mailto=<addr> sends a mail when recording has finished to mailaddress <addr> (default: root@localhost)
-   --quiet fully disables screen output
-   --silent fully disables sounds while recording
-   --output=<fn> user defined recording filename
+
+   --beep            enables beep tones when recording starts or stops.
+   --playonly        disables recording and plays the stream now or at scheduled times
+   --mailto=<addr>   sends a mail when recording has finished to mailaddress <addr> (default: root@localhost)
+   --quiet           fully disables screen output
+   --silent          fully disables sounds while recording
+   --label=<label>   additional text which is added to the filename
+   --output=<fn>     user defined recording filename
    --directory=<dir> user defined working directory
 
    examples:

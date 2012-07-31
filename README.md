@@ -66,6 +66,7 @@ MyStreamRecorder -- usage:
        [-m<addr>|--mailto=<addr>]
        [-o<fn>|--output=<fn>]
        [-d<dir>|--directory=<dir>]
+       [-u<url>|--baseurl=<url>]
        [-v|--version]
        [-V|--verbose]
 
@@ -80,11 +81,12 @@ MyStreamRecorder -- usage:
 
    --beep            enables beep tones when recording starts or stops.
    --playonly        disables recording and plays the stream now or at scheduled times
-   --mailto=<addr>   sends a mail when recording has finished to mailaddress <addr> (default: root@localhost)
+   --mailto=<addr>   send notification e-mail when recording has finished to <addr> (default: root@localhost)
    --quiet           fully disables screen output
-   --silent          fully disables sounds while recording
+   --noplayback      fully disables sounds while recording
    --label=<label>   additional text which is added to the filename
    --output=<fn>     user defined recording filename
+   --baseurl=<url>   baseurl for web link to recorded file in e-mail
    --directory=<dir> user defined working directory
 
    examples:
@@ -95,7 +97,7 @@ MyStreamRecorder -- usage:
    php rec.php -b dradio 201112312000 201112312200
    php rec.php http://radioeins.de/livemp3 01:00 2h
    php rec.php --directory=/tmp --output=Dradio-Wissen_News.ogg drwissen 30m
-   php rec.php --mailto=mail@example.com dradio
+   php rec.php --mailto=mail@example.com --baseurl=http://www.example.com dradio
 
    You may like to define convenience aliases such as
 

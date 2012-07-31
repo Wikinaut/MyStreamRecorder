@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.16 20120731" );
+define( "VERSION", "v2.17 20120731" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -54,6 +54,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *	20120730 2.15	fix to remove some spurious cron output
  *	20120731 2.16	adding label option to add a short description
  *			sanitize filenames to prevent path traversal
+ *			baseurl option for web link to recorded file in notification e-mails
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -183,19 +184,23 @@ function wfQuotedPrintable( $string ) {
 }
 
 function prepareMail( $dest = "root@localhost", $text = "" , $from = "<no-reply@possible>" ) {
-	global $shortName,$escFilename;
+	global $shortName,$fileName,$baseUrl;
 
+	$webaccess = ( $baseUrl === "" ) ? "" : "
+web access:
+{$baseUrl}/{$shortName}
+";
 	$subject = "$shortName successfully recorded";
-	$body = "Recording of $escFilename has finished.
+	$body = "Recording of $fileName has finished.
 
 $text
 
 Your friendly ".PROGRAM_NAME."
 (".VERSION.")
 
-full local path:
-$escFilename
-
+local path:
+$fileName
+$webaccess
 filesize in bytes:";
 
 //	$headers = "Date: " . date("r") . "\n" .
@@ -346,6 +351,7 @@ $parameters = array(
 	"m::" => "mailto::",
 	"o:" => "output:",
 	"d:" => "directory:",
+	"u:" => "baseurl:",
 	"v" => "version",
 	"V" => "verbose",
 );
@@ -375,6 +381,24 @@ case ( !empty( $options["output"] ) ):
 	break;
 default:
 	$fn = false;
+}
+
+# baseUrl (server base address) for webaccess of recorded files in mails
+switch ( true ) {
+case ( !empty( $options["u"] ) ):
+	$baseUrl = $options["u"];
+	break;
+case ( !empty( $options["baseurl"] ) ):
+	$baseUrl = $options["baseurl"];
+	break;
+default:
+	$baseUrl = "";
+}
+if ( $baseUrl !== "" ) {
+	$baseUrl = trim( $baseUrl, " /." );
+	if ( !preg_match( "!(https?|ftp)://!i", $baseUrl ) ) {
+		$baseUrl = "http://" . $baseUrl;
+	}
 }
 
 switch ( true ) {
@@ -543,6 +567,7 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
        [-m<addr>|--mailto=<addr>]
        [-o<fn>|--output=<fn>]
        [-d<dir>|--directory=<dir>]
+       [-u<url>|--baseurl=<url>]
        [-v|--version]
        [-V|--verbose]
 
@@ -557,11 +582,12 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
 
    --beep            enables beep tones when recording starts or stops.
    --playonly        disables recording and plays the stream now or at scheduled times
-   --mailto=<addr>   sends a mail when recording has finished to mailaddress <addr> (default: $defaultMailto)
+   --mailto=<addr>   send notification e-mail when recording has finished to <addr> (default: $defaultMailto)
    --quiet           fully disables screen output
-   --silent          fully disables sounds while recording
+   --noplayback      fully disables sounds while recording
    --label=<label>   additional text which is added to the filename
    --output=<fn>     user defined recording filename
+   --baseurl=<url>   baseurl for web link to recorded file in notification e-mail
    --directory=<dir> user defined working directory
 
    examples:
@@ -572,7 +598,7 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
    php rec.php -b --label=\"classical concert\" dradio 201112312000 201112312200
    php rec.php http://radioeins.de/livemp3 01:00 2h
    php rec.php --directory=/tmp --output=Dradio-Wissen_News.ogg drwissen 30m
-   php rec.php --mailto=mail@example.com dradio
+   php rec.php --mailto=mail@example.com --baseurl=http://www.example.com dradio
 
    You may like to define convenience aliases such as
 

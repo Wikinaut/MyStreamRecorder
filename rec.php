@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.17 20120731" );
+define( "VERSION", "v2.18 20120801" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -55,6 +55,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *	20120731 2.16	adding label option to add a short description
  *			sanitize filenames to prevent path traversal
  *			baseurl option for web link to recorded file in notification e-mails
+ *	20120801 2.18	added server info to mails
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -82,6 +83,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *	check if postfix is running
  *	parameter files stationlist and program defaults
  *	check available disk space before scheduling and show or send a warning
+ *	transcode ogg to mp3 (or vice versa) after recording
  *
 ***/
 
@@ -186,7 +188,8 @@ function wfQuotedPrintable( $string ) {
 function prepareMail( $dest = "root@localhost", $text = "" , $from = "<no-reply@possible>" ) {
 	global $shortName,$fileName,$baseUrl;
 
-	$webaccess = ( $baseUrl === "" ) ? "" : "
+	$serverInfo = $_SERVER['USER'] . "@" . $_SERVER['HOSTNAME'] .":" . $_SERVER['PHP_SELF'] . " " . VERSION;
+	$webAccess = ( $baseUrl === "" ) ? "" : "
 web access:
 {$baseUrl}/{$shortName}
 ";
@@ -196,11 +199,11 @@ web access:
 $text
 
 Your friendly ".PROGRAM_NAME."
-(".VERSION.")
+$serverInfo
 
 local path:
 $fileName
-$webaccess
+$webAccess
 filesize in bytes:";
 
 //	$headers = "Date: " . date("r") . "\n" .
@@ -918,7 +921,7 @@ exec( "echo " . escapeshellarg( $killSingleJob ) . " > $killSingleJobFilename;ch
 
 # prepare a file for sendmail
 if ( $mailto ) {
-	$mailText = prepareMail( $mailto, $killSingleJob, PROGRAM_NAME . " <no-reply@possible>" );
+	$mailText = prepareMail( $mailto, $killSingleJob, PROGRAM_NAME . "@" . $_SERVER['HOSTNAME'] . " <no-reply@possible>" );
 	exec( "echo " . escapeshellarg( $mailText ) . " > $mailFilename" );
 }
 

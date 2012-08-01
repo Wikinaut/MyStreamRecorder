@@ -188,7 +188,7 @@ function wfQuotedPrintable( $string ) {
 function prepareMail( $dest = "root@localhost", $text = "" , $from = "<no-reply@possible>" ) {
 	global $shortName,$fileName,$baseUrl;
 
-	$serverInfo = $_SERVER['USER'] . "@" . $_SERVER['HOSTNAME'] .":" . $_SERVER['PHP_SELF'] . " " . VERSION;
+	$serverInfo = $_SERVER['USER'] . "@" . gethostname() .":" . $_SERVER['PHP_SELF'] . " " . VERSION;
 	$webAccess = ( $baseUrl === "" ) ? "" : "
 web access:
 {$baseUrl}/{$shortName}
@@ -921,7 +921,7 @@ exec( "echo " . escapeshellarg( $killSingleJob ) . " > $killSingleJobFilename;ch
 
 # prepare a file for sendmail
 if ( $mailto ) {
-	$mailText = prepareMail( $mailto, $killSingleJob, PROGRAM_NAME . "@" . $_SERVER['HOSTNAME'] . " <no-reply@possible>" );
+	$mailText = prepareMail( $mailto, $killSingleJob, PROGRAM_NAME . "@" . gethostname() . " <no-reply@possible>" );
 	exec( "echo " . escapeshellarg( $mailText ) . " > $mailFilename" );
 }
 

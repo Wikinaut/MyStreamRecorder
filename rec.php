@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.18 20120801" );
+define( "VERSION", "v2.31 20120805" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -56,6 +56,10 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *			sanitize filenames to prevent path traversal
  *			baseurl option for web link to recorded file in notification e-mails
  *	20120801 2.18	added server info to mails
+ * 	20120805 2.30	redesigned the handling of settings: there are now ini files (JSON)
+ *			default settings rec.ini
+ *			personal settings .rec.ini
+ *	20120805 2.31	search path for global and personal ini files (see $iniFilePathnames)
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -77,13 +81,13 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *
  * 	TODO / FIXME
  *
- * 	playback while recording: check if stream exists then play it immediately
- * 	when --directory was given for scheduling a recording, the killall file cannot be accessed with php rec.php -s (because the directory is missing there!
- * 	check working directory access and execution permissions for files
- *	check if postfix is running
- *	parameter files stationlist and program defaults
- *	check available disk space before scheduling and show or send a warning
- *	transcode ogg to mp3 (or vice versa) after recording
+ * 	- playback while recording: check if stream exists then play it immediately
+ * 	- when --directory was given for scheduling a recording, the killall file cannot be accessed with php rec.php -s (because the directory is missing there!
+ * 	- check working directory access and execution permissions for files
+ *	- check if postfix is running
+ *	- check available disk space before scheduling and show or send a warning
+ *	- transcode ogg to mp3 (or vice versa) after recording
+ *	+ parameter files stationlist and program defaults
  *
 ***/
 
@@ -129,6 +133,20 @@ On OpenSuse run \"# rcatd start\" and/or use YaST to activate atd for runlevel 2
 
 # mail recipient default address for finished recording mails
 $defaultMailto = "root@localhost";
+
+# search path for ini files. Content of last files take precedence.
+$iniFilePathnames = array(
+		"/etc/mystreamrecorder/rec.ini",
+		"/etc/rec.ini",
+		getenv( "HOME" ) . "/mystreamrecorder/rec.ini",
+		getenv( "HOME" ) . "/rec.ini",
+		dirname( __FILE__ ) . "/rec.ini",
+		"/etc/mystreamrecorder/.rec.ini",
+		"/etc/.rec.ini",
+		getenv( "HOME" ) . "/mystreamrecorder/.rec.ini",
+		getenv( "HOME" ) . "/.rec.ini",
+		dirname( __FILE__ ) . "/.rec.ini",
+	);
 
 # sounds can be played when recording starts or stops
 # this can be enabled with -b or --beep option
@@ -245,7 +263,7 @@ function changeTimeToDuration( $time ) {
 
 function isPreprogrammedStation( $name, $haystack ) {
 	foreach( $haystack as $k ) {
-		if ( in_array( strtolower($name), $k["name"] ) ) {
+		if ( in_array( strtolower($name), $k["station"] ) ) {
 			return $k;
 		}
 	}
@@ -259,71 +277,30 @@ function sanitize_filename( $fn ) {
 	return preg_replace( "![^a-z0-9 _-]!i", "", $fn );
 }
 
-$preprogrammedStations = array (
-		# station names must be coded in lowercase
-		# the order determines the program P number P1, P2 ...
-		array( "name" => array( "dradiokultur", "deutschlandradiokultur", "dradio", "deutschlandradio", "dkultur", "drk", "dr" ),
-			"url" => "http://dradio.ic.llnwd.net/stream/dradio_dkultur_m_a.ogg",
-			"encodingtype" => "ogg",
-			"homepage" => "http://www.dradio.de/dkultur/"
-		),
-		array( "name" => array( "kulturradio", "rbbkulturradio", "kulturradiorbb", "kradio", "kr", "rbb" ),
-			"url" => "http://kulturradio.de/livemp3",
-			"encodingtype" => "mp3",
-			"homepage" => "http://www.kulturradio.de/"
-		),
-		array( "name" => array( "deutschlandfunk", "dlf", "df" ),
-			"url" => "http://dradio.ic.llnwd.net/stream/dradio_dlf_m_a.ogg",
-			"encodingtype" => "ogg",
-			"homepage" => "http://www.dradio.de/dlf/"
-		),
-		array( "name" => array( "funkhauseuropa", "fhe", "wdrfunkhauseuropa" ),
-			"url" => "http://gffstream.ic.llnwd.net/stream/gffstream_w20a",
-			"encodingtype" => "mp3",
-			"homepage" => "http://www.funkhaus-europa.de/"
-		),
-		array( "name" => array( "radioeins", "radio1", "rbbradioeins", "re", "r1" ),
-			"url" => "http://radioeins.de/livemp3",
-			"encodingtype" => "mp3",
-			"homepage" => "http://www.radioeins.de/"
-		),
-		array( "name" => array( "dradiowissen", "drwissen", "drw" ),
-			"url" => "http://dradio.ic.llnwd.net/stream/dradio_dwissen_m_a.ogg",
-			"encodingtype" => "ogg",
-			"homepage" => "http://wissen.dradio.de/"
-		),
-		array( "name" => array( "deutschewelle", "dwelle", "dw" ),
-			"url" => "http://c13010-ls.i.core.cdn.streamfarm.net/dwworldlive-live/13010dwrde64.mp3",
-			"encodingtype" => "mp3",
-			"homepage" => "http://www.dwelle.de/"
-		),
-		array( "name" => array( "multicult", "multicultfm", "multicult2.0", "mc"),
-			"url" => "http://stream.multicult.fm:8000/hifi",
-			"encodingtype" => "mp3",
-			"homepage" => "http://www.multicult.fm/"
-		),
-		array( "name" => array( "radionova", "novaradio", "novaplanet", "nova" ),
-			"url" => "http://broadcast.infomaniak.net:80/radionova-high.mp3",
-			"encodingtype" => "mp3",
-			"homepage" => "http://www.novaplanet.com/"
-		),
-		array( "name" => array( "90elf" ),
-			"url" => "http://85.239.108.41/90elf_basis_hq",
-			"encodingtype" => "mp3",
-			"homepage" => "http://www.90elf.de/"
-		),
-		array( "name" => array( "radiob2", "radio-b2", "radio-b2-berlin-brandenburg", "b2" ),
-			"url" => "http://www.digitalradiostream.de:9090/listen.pls",
-			"encodingtype" => "mp3",
-			"homepage" => "http://www.radiob2.de/"
-		),
-);
+$settings = array();
+$iniFileFound = false;
+
+foreach ( $iniFilePathnames as $iniFile ) {
+	if ( file_exists( $iniFile ) ) {
+		$iniFileFound = true;
+		$settings = array_merge_recursive( $settings, json_decode( file_get_contents( $iniFile ), true ) );
+	};
+}
+
+if ( !$iniFileFound ) {
+	error( "$iniFilename does not exist." );
+}
+
+// print_r( $settings );
+// die();
+
+$stations = $settings["stations"];
 
 # dynamically assign additional programm numbers such as "P1" to the preprogrammed station names
 # the p numbers are stored in lowercase, printed in uppercase
 $i = 1;
-foreach( $preprogrammedStations as $k => $v ) {
-	array_unshift( $preprogrammedStations[$k]["name"], "p" . $i++ );
+foreach( $stations as $k => $v ) {
+	array_unshift( $stations[$k]["station"], "p" . $i++ );
 }
 
 $streamUrl = "";
@@ -444,31 +421,62 @@ if ( !file_exists( $workingDirectory ) ) {
 	$workingDirectory = false;
 }
 
-switch ( true ) {
-	case ( !isset( $options["m"] ) && !isset( $options["mailto"] ) ):
-		$mailto = false;
-		break;
-	case ( !empty( $options["m"] ) ):
-		$mailto = $options["m"];
-		break;
-	case ( !empty( $options["mailto"] ) ):
-		$mailto = $options["mailto"];
-		break;
-	default:
-		$mailto = $defaultMailto;
+if ( isset( $settings["mailto"] ) ) {
+
+	$defaultMailto = $settings["mailto"];
+	$mailto = $defaultMailto;
+
+} else {
+
+	switch ( true ) {
+		case ( !isset( $options["m"] ) && !isset( $options["mailto"] ) ):
+			$mailto = false;
+			break;
+		case ( !empty( $options["m"] ) ):
+			$mailto = $options["m"];
+			break;
+		case ( !empty( $options["mailto"] ) ):
+			$mailto = $options["mailto"];
+			break;
+		default:
+			$mailto = $defaultMailto;
+	}
+
 }
+
 
 # $killAllJobsFilename = "$workingDirectory/kill-all-streamrecorder-jobs.sh";
 $killAllJobsFilename = "$workingDirectory/killall.sh";
 
-$noPlayback = ( isset( $options["n"] ) || isset( $options["noplayback"] ) );
-$record = !( isset( $options["p"] ) || isset( $options["playonly"] ) );
-$beep = ( isset( $options["b"] ) || isset( $options["beep"] ) );
-$quiet = ( isset( $options["q"] ) || isset( $options["quiet"] ) );
-$verbose = ( isset( $options["V"] ) || isset( $options["verbose"] ) );
-$help = ( isset( $options["h"] ) || isset( $options["help"] ) );
-$kill = ( isset( $options["k"] ) || isset( $options["killall"] ) || isset( $options["s"] ) || isset( $options["stop"] ) );
-$showVersion = ( isset( $options["v"] ) || isset( $options["version"] ) );
+$noPlayback = ( isset( $options["n"] )
+	|| isset( $options["noplayback"] )
+	|| ( isset( $settings["noplayback"] ) && ( $settings["noplayback"] === true ) ) );
+
+$record = !( isset( $options["p"] )
+	|| isset( $options["playonly"] )
+	|| ( isset( $settings["playonly"] ) && ( $settings["playonly"] === true ) ) );
+
+$beep = ( isset( $options["b"] )
+	|| isset( $options["beep"] )
+	|| ( isset( $settings["beep"] ) && ( $settings["beep"] === true ) ) );
+
+$quiet = ( isset( $options["q"] )
+	|| isset( $options["quiet"] )
+	|| ( isset( $settings["quiet"] ) && ( $settings["quiet"] === true ) ) );
+
+$verbose = ( isset( $options["V"] )
+	|| isset( $options["verbose"] )
+	|| ( isset( $settings["verbose"] ) && ( $settings["verbose"] === true ) ) );
+
+$help = ( isset( $options["h"] )
+	|| isset( $options["help"] ) );
+
+$kill = ( isset( $options["k"] )
+	|| isset( $options["killall"] )
+	|| isset( $options["s"] ) || isset( $options["stop"] ) );
+
+$showVersion = ( isset( $options["v"] )
+	|| isset( $options["version"] ) );
 
 if ( $kill ) {
 	if ( file_exists( $killAllJobsFilename ) ) {
@@ -532,11 +540,11 @@ if ( $error && !$help ) {
 if ( !empty( $argv[1] ) ) {
 	$station = $argv[1];
 	$stationStripped = preg_replace( "![\W]!i", "", $argv[1] ) ;
-	if ( $preprogrammed = isPreprogrammedStation( $stationStripped, $preprogrammedStations ) ) {
-		$streamUrl = $preprogrammed["url"];
-		$stationName = $preprogrammed["name"][1]; // use the first ["name"][1], not the program P number ["name"][0]
+	if ( $preprogrammed = isPreprogrammedStation( $stationStripped, $stations ) ) {
+		$streamUrl = $preprogrammed["streams"][0]["url"];
+		$stationName = $preprogrammed["station"][1]; // use the first ["station"][1], not the program P number ["station"][0]
 		if ( !$fn ) {
-			$fn = sanitize_filename( $stationName . $label ) . "." . $preprogrammed["encodingtype"];
+			$fn = sanitize_filename( $stationName . $label ) . "." . $preprogrammed["streams"][0]["encodingtype"];
 		}
 	} else if ( preg_match( "!^http://!", $station ) ) {
 		// FIXME
@@ -624,9 +632,9 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
 
    P##: station name and alternative names - station homepage
 ";
-	foreach( $preprogrammedStations as $s ) {
+	foreach( $stations as $s ) {
 		$usage .= "\n   ";
-		foreach ( $s["name"] as $key => $value ) {
+		foreach ( $s["station"] as $key => $value ) {
 			$value = preg_replace( "!^p([0-9])$!i", "P$1 :", $value );
 			$value = preg_replace( "!^p([0-9]{2})$!i", "P$1:", $value );
 			$usage .= $value . " ";
@@ -699,13 +707,13 @@ $mailFilename = $workingDirectory . "/mail-$shortName.txt";
 # system( "rcatd start 1>/dev/null");
 
 if ( $beep && file_exists( $startMessageSound ) ) {
-	$startRecordingHook = "; nohup mplayer -ao alsa $startMessageSound & ";
+	$startRecordingHook = "; nohup mplayer -ao alsa $startMessageSound $nul & ";
 } else {
 	$startRecordingHook = "";
 }
 
 if ( $beep && file_exists( $stopMessageSound ) ) {
-	$stopRecordingHook = "; nohup mplayer -ao alsa $stopMessageSound & ";
+	$stopRecordingHook = "; nohup mplayer -ao alsa $stopMessageSound $nul & ";
 } else {
 	$stopRecordingHook = "";
 }
@@ -727,7 +735,7 @@ $recordingATStartJobid = "";
 
 if ( $record ) {
 	if ( $immediateStart ) {
-		exec( "nohup mplayer -dumpstream -dumpfile $escFilename ". escapeshellarg( $streamUrl ) ." $nul&echo $!",
+		exec( "nohup mplayer -dumpstream -dumpfile $escFilename ". escapeshellarg( $streamUrl ) ." $nul & echo $! $startRecordingHook",
 			$out
 		);
 		$recordingStartJobid = $out[0];
@@ -807,7 +815,7 @@ if ( !$noPlayback ) switch ( true ) {
 
 $killRecordingAndPlaybackStopJob = "";
 
-$mailJob = ( $mailto ) ? "; (cat $mailFilename;stat -c %s $escFilename) | /usr/sbin/sendmail -t $nul; rm -f $mailFilename " : "";
+$mailJob = ( $mailto ) ? "(cat $mailFilename;stat -c %s $escFilename) | /usr/sbin/sendmail -t $nul; rm -f $mailFilename " : "";
 
 $rmSingleKillJobFile = ";rm -f $killSingleJobFilename $nul";
 

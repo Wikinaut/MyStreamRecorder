@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.31 20120805" );
+define( "VERSION", "v2.32 20120814" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -60,6 +60,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *			default settings rec.ini
  *			personal settings .rec.ini
  *	20120805 2.31	search path for global and personal ini files (see $iniFilePathnames)
+ *	20120814 2.32	show search path
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -280,15 +281,20 @@ function sanitize_filename( $fn ) {
 $settings = array();
 $iniFileFound = false;
 
+$iniFiles = "";
 foreach ( $iniFilePathnames as $iniFile ) {
 	if ( file_exists( $iniFile ) ) {
 		$iniFileFound = true;
+		$iniFiles .= "   (+)";
 		$settings = array_merge_recursive( $settings, json_decode( file_get_contents( $iniFile ), true ) );
+	} else {
+		$iniFiles .= "   (-)";
 	};
+	$iniFiles .= " $iniFile\n";
 }
 
 if ( !$iniFileFound ) {
-	error( "$iniFilename does not exist." );
+	error( "No inifile found." );
 }
 
 // print_r( $settings );
@@ -651,6 +657,11 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
    recorded streams will be stored in the working directory $workingDirectory
    " . PROGRAM_NAME . " will generate a script $killAllJobsFilename which can be used for killing all scheduled actions
    (or type 'php rec.php -s').
+
+   Inifiles:
+
+$iniFiles
+
 $error";
 
 /***

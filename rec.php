@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.32 20120814" );
+define( "VERSION", "v2.33 20120814" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -60,7 +60,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *			default settings rec.ini
  *			personal settings .rec.ini
  *	20120805 2.31	search path for global and personal ini files (see $iniFilePathnames)
- *	20120814 2.32	show search path
+ *	20120814 2.33	show search path; added --longhelp option, refactored help handling
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -88,6 +88,8 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *	- check if postfix is running
  *	- check available disk space before scheduling and show or send a warning
  *	- transcode ogg to mp3 (or vice versa) after recording
+ *	- show a warning for contradicting options for example "play --noplayback" which does not make sense.
+ *	  ad-hoc solution is that some options are ignored or overwritten silently
  *	+ parameter files stationlist and program defaults
  *
 ***/
@@ -340,6 +342,7 @@ $parameters = array(
 	"u:" => "baseurl:",
 	"v" => "version",
 	"V" => "verbose",
+	"longhelp",
 );
 
 $options = getopt( implode( '', array_keys( $parameters ) ), $parameters );
@@ -462,6 +465,10 @@ $record = !( isset( $options["p"] )
 	|| isset( $options["playonly"] )
 	|| ( isset( $settings["playonly"] ) && ( $settings["playonly"] === true ) ) );
 
+if ( !$record ) {
+	$noPlayback = false;	// "play" overwrites a possible --noplayback option
+}
+
 $beep = ( isset( $options["b"] )
 	|| isset( $options["beep"] )
 	|| ( isset( $settings["beep"] ) && ( $settings["beep"] === true ) ) );
@@ -476,6 +483,8 @@ $verbose = ( isset( $options["V"] )
 
 $help = ( isset( $options["h"] )
 	|| isset( $options["help"] ) );
+
+$longhelp = ( isset( $options["longhelp"] ) );
 
 $kill = ( isset( $options["k"] )
 	|| isset( $options["killall"] )
@@ -538,11 +547,6 @@ if ( empty( $startTime ) ) {
 $playbackInfo = ( $playbackStartDelay <= 0 ) ? "Playback uses an extra stream and starts about " . -$playbackStartDelay . " seconds before starttime" : "Playback starts about $playbackStartDelay seconds after the recording";
 $playbackInfo .= " (--noplayback disables playback while recording).";
 
-if ( $error && !$help ) {
-	echo $error . "\nType -h or --help for detailed help\n";
-	die();
-}
-
 if ( !empty( $argv[1] ) ) {
 	$station = $argv[1];
 	$stationStripped = preg_replace( "![\W]!i", "", $argv[1] ) ;
@@ -564,39 +568,63 @@ if ( !empty( $argv[1] ) ) {
 		error( "Your input " . escapeshellarg( $station ) . " is neither a pre-programmed station name nor a valid url." );
 	}
 } else {
-	# error( "No station name or valid stream url given." );
-	$help = true;
+	error( "No station name or valid stream url given." );
 }
 
-if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
-	if ( $error ) $error = "\n" . $error;
-	$usage = PROGRAM_NAME . "  " . VERSION ." -- usage:
+/***
+if ( $error && !$help && !$longhelp ) {
+	echo $error . "\nType -h or --help or --longhelp for detailed help\n";
+	die();
+}
+***/
+
+if ( ( $longhelp || $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
+
+	$usage = PROGRAM_NAME . "  " . VERSION ."
+
+   records and/or plays a stream from starttime to stoptime
+   playback while recording is default (disable with --noplayback)
+
+   usage:
 
    php rec.php
 
-       [-n|--noplayback]
        [-p|--playonly]
-       [-b|--beep]
-       [-q|--quiet]
+       [-s|--stop] [-k|--killall]
+
        [-h|--help]
-       [-k|--killall] [-s|--stop]
+       [--longhelp]
+
+       [-q|--quiet]
+       [-n|--noplayback]
+       [-b|--beep]
+
        [-l<label>|--label=<label>]
        [-m<addr>|--mailto=<addr>]
+
        [-o<fn>|--output=<fn>]
        [-d<dir>|--directory=<dir>]
+
        [-u<url>|--baseurl=<url>]
+
        [-v|--version]
        [-V|--verbose]
 
        <streamurl>|<stationname> [<starttime>|now] [<stoptime>|###min|###m|#.#hours|#.#h]
+";
 
+	if ( $longhelp ) {
+		$usage .= "
    Without times, stream recording or playing starts immediately and stops after $defaultRecordingTimeHours hours of recording.
    If only the starttime is present, stream recording or playing for $defaultRecordingTimeHours hours will start at startime.
    The default recording filename under $workingDirectory comprises the station name or stream url and the start and stop times.
 
    Recording starts about $preRecordingTime seconds before the start time and stops about $postRecordingTime seconds after the stop time.
    $playbackInfo
+";
+	}
 
+	$usage .= "
    --beep            enables beep tones when recording starts or stops.
    --playonly        disables recording and plays the stream now or at scheduled times
    --mailto=<addr>   send notification e-mail when recording has finished to <addr> (default: $defaultMailto)
@@ -616,7 +644,10 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
    php rec.php http://radioeins.de/livemp3 01:00 2h
    php rec.php --directory=/tmp --output=Dradio-Wissen_News.ogg drwissen 30m
    php rec.php --mailto=mail@example.com --baseurl=http://www.example.com dradio
+";
 
+	if ( $longhelp ) {
+		$usage .= "
    You may like to define convenience aliases such as
 
    # alias rec='php rec.php'
@@ -637,7 +668,8 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
    pre-programmed stations:
 
    P##: station name and alternative names - station homepage
-";
+";	}
+
 	foreach( $stations as $s ) {
 		$usage .= "\n   ";
 		foreach ( $s["station"] as $key => $value ) {
@@ -647,8 +679,11 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
 		}
 		$usage .= "- " . $s["homepage"];
 	}
-	echo $usage."
 
+	$usage .= "\n";
+
+	if ( $longhelp ) {
+		$usage .= "
    administrative information:
 
    sources to look up stream urls: http://tinyurl.com/de-internetradio http://www.radiosure.com/stations/
@@ -660,16 +695,24 @@ if ( ( $help || $error ) && ( PHP_SAPI === 'cli' ) ) {
 
    Inifiles:
 
-$iniFiles
+$iniFiles";
 
-$error";
+	}
 
-/***
- * How to kill scheduled jobs manually:
- * 1. kill any job owning the stream file/s:             # fuser -k <streamfile>*
- * 2. kill scheduled at jobs:                            # atq; atrm <at-pid>
- * 3. kill any pending mplayer recording or playing job: # killall mplayer
- ***/
+	if ( $help || $longhelp ) {
+		$error = "";
+	} else {
+		if ( $error ) $error = "\n" . $error;
+	}
+
+	echo "$usage$error\n";
+
+	/***
+	 * How to kill scheduled jobs manually:
+	 * 1. kill any job owning the stream file/s:             # fuser -k <streamfile>*
+	 * 2. kill scheduled at jobs:                            # atq; atrm <at-pid>
+	 * 3. kill any pending mplayer recording or playing job: # killall mplayer
+	 ***/
 	die();
 }
 
@@ -825,6 +868,7 @@ if ( !$noPlayback ) switch ( true ) {
 # or kills all mplayer jobs when only playing (we do not know the jobid of the specific player when scheduling the kill job)
 
 $killRecordingAndPlaybackStopJob = "";
+$recording_and_playbackATStopJobid = "";
 
 $mailJob = ( $mailto ) ? "(cat $mailFilename;stat -c %s $escFilename) | /usr/sbin/sendmail -t $nul; rm -f $mailFilename " : "";
 

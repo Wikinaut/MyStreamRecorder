@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.33 20120814" );
+define( "VERSION", "v2.34 20120829" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -61,6 +61,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *			personal settings .rec.ini
  *	20120805 2.31	search path for global and personal ini files (see $iniFilePathnames)
  *	20120814 2.33	show search path; added --longhelp option, refactored help handling
+ * 	20120829 2.34	killing only the specific (recording, playback) jobs
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -78,10 +79,11 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *
  * 	atq		list the queued "at" commands
  * 	atrm		remove queued "at" command
- * 	fuser -k <fn>	kill record and playback jobs which own streamfile <fn>
  *
  * 	TODO / FIXME
  *
+ * 	- list scheduled jobs
+ * 	- allow killing of selected jobs
  * 	- playback while recording: check if stream exists then play it immediately
  * 	- when --directory was given for scheduling a recording, the killall file cannot be accessed with php rec.php -s (because the directory is missing there!
  * 	- check working directory access and execution permissions for files
@@ -787,18 +789,17 @@ $playbackJobid = "";
 $playbackATStartJobid = "";
 $recordingATStartJobid = "";
 
+$mplayerRecordingCommand = "mplayer -dumpstream -dumpfile $escFilename " . escapeshellarg( $streamUrl );
+
 if ( $record ) {
 	if ( $immediateStart ) {
-		exec( "nohup mplayer -dumpstream -dumpfile $escFilename ". escapeshellarg( $streamUrl ) ." $nul & echo $! $startRecordingHook",
+		exec( "nohup $mplayerRecordingCommand $nul & echo $! $startRecordingHook",
 			$out
 		);
 		$recordingStartJobid = $out[0];
 
-		# the following is not needed because the fuser command -k escFilename kills also the recordingStartJob
-		# $killRecordingStartJob = "kill $recordingStartJobid;";
-
 	} else {
-		exec( "echo \"nohup mplayer -dumpstream -dumpfile $escFilename ". escapeshellarg( $streamUrl ) . " & 1>&2 $startRecordingHook\" \
+		exec( "echo \"nohup $mplayerRecordingCommand & 1>&2 $startRecordingHook\" \
 			| at " . date( $atDateformat, $startTime ) . " 2>&1",
 			$out
 		);
@@ -816,10 +817,12 @@ if ( $record ) {
 # but not seconds resolution, the plackback job may otherwise be started before the record job.
 # we add a safe guard of 60 seconds.
 
+$mplayerPlaybackCommand = "mplayer -ao alsa " . escapeshellarg( $streamUrl );
+
 if ( !$noPlayback ) switch ( true ) {
 
 	case  ( !$record && !$immediateStart && ( $playbackStartDelay > 0 ) ):
-		exec( "echo \"nohup mplayer -ao alsa " . escapeshellarg( $streamUrl ) ." &\" \
+		exec( "echo \"nohup $mplayerPlaybackCommand &\" \
 			| at " . date( $atDateformat, $startTime+$playbackStartDelay ) . " 2>&1;\n",
 			$out2
 		);
@@ -829,7 +832,8 @@ if ( !$noPlayback ) switch ( true ) {
 		break;
 
 	case ( $record && !$immediateStart && ( $playbackStartDelay > 0 ) ):
-		exec( "echo \"nohup mplayer -ao alsa $escFilename &\" \
+		$mplayerPlaybackCommand = "mplayer -ao alsa $escFilename"; // playback while the file is recorded
+		exec( "echo \"nohup $mplayerPlaybackCommand &\" \
 			| at " . date( $atDateformat, $startTime+$playbackStartDelay ) . " 2>&1;\n",
 			$out2
 		);
@@ -839,7 +843,7 @@ if ( !$noPlayback ) switch ( true ) {
 		break;
 
 	case  ( !$immediateStart && ( $playbackStartDelay <= 0 ) ):
-		exec( "echo \"nohup mplayer -ao alsa " . escapeshellarg( $streamUrl ) ." &\" \
+		exec( "echo \"nohup $mplayerPlaybackCommand &\" \
 			| at " . date( $atDateformat, $startTime+$playbackStartDelay ) . " 2>&1;\n",
 			$out2
 		);
@@ -853,7 +857,7 @@ if ( !$noPlayback ) switch ( true ) {
 		#
 		# a different solution would be to wait until the recorded stream is available as a file
 		# and then playing the file
-		exec( "nohup mplayer -ao alsa " . escapeshellarg( $streamUrl ) ." $nul&echo $!",
+		exec( "nohup $mplayerPlaybackCommand $nul&echo $!",
 			$out2
 		);
 		$playbackJobid = $out2[0];
@@ -874,10 +878,14 @@ $mailJob = ( $mailto ) ? "(cat $mailFilename;stat -c %s $escFilename) | /usr/sbi
 
 $rmSingleKillJobFile = ";rm -f $killSingleJobFilename $nul";
 
+$killMplayerRecordingCommand = "echo $cmdLine $escFilename; kill \\\$(ps -F --no-heading -C mplayer | grep \\\"" . str_replace( "'", "", $mplayerRecordingCommand ) . "\\\" | awk '{print \\\$2}')";
+$killMplayerRecordingCommand_shell = "echo $cmdLine $escFilename; kill $(ps -F --no-heading -C mplayer | grep \"" . str_replace( "'", "", $mplayerRecordingCommand ) . "\" | awk '{print $2}')";
+$killMplayerPlaybackCommand = "echo $cmdLine; kill \\\$(ps -F --no-heading -C mplayer | grep \\\"" . str_replace( "'", "", $mplayerPlaybackCommand ) . "\\\" | awk '{print \\\$2}')";
+
 switch ( true ) {
 
 	case ( $record && !$immediateStart && ( $playbackStartDelay > 0) ):
-		exec( "echo \"fuser -k {$escFilename} $nul {$stopRecordingHook}{$mailJob} $nul {$rmSingleKillJobFile}\" \
+		exec( "echo \"$killMplayerRecordingCommand $nul $stopRecordingHook $mailJob $nul $rmSingleKillJobFile\" \
 			| at " . date( $atDateformat, $stopTime ) . " 2>&1",
 			$out3
 		);
@@ -890,7 +898,7 @@ switch ( true ) {
 		# this one kills all mplayer task which is not so nice
 		# but we do not know the jobid number
 		# because the mplayer playback job which we want to kill is started by "at" job
-		exec( "echo \"killall mplayer $nul$stopRecordingHook $nul\" \
+		exec( "echo \"$killMplayerPlaybackCommand $nul $stopRecordingHook $nul\" \
 			| at " . date( $atDateformat, $stopTime ) . " 2>&1",
 			$out3
 		);
@@ -900,7 +908,7 @@ switch ( true ) {
 		break;
 
 	case ( $record && ( $immediateStart || ( $playbackStartDelay <= 0) ) ):
-		exec( "echo \"fuser -k $escFilename $nul;killall mplayer {$nul}{$rmSingleKillJobFile}{$stopRecordingHook}{$mailJob}\" \
+		exec( "echo \"$killMplayerRecordingCommand $nul;$killMplayerPlaybackCommand $nul $rmSingleKillJobFile $stopRecordingHook $mailJob\" \
 			| at " . date( $atDateformat, $stopTime ) . " 2>&1",
 			$out3
 		);
@@ -955,7 +963,7 @@ $killJob .= "### >>> execute '$killAllJobsFilename' or 'php {$_SERVER['PHP_SELF'
 ###\n";
 
 if ( $record ) {
-	$killJob .= "fuser -k $escFilename $nul;$killRecordingStartJob$killPlaybackStartJob";
+	$killJob .= "$killMplayerRecordingCommand_shell $nul;$killRecordingStartJob$killPlaybackStartJob";
 } else {
 	$killJob .= $killPlaybackStartJob;
 }

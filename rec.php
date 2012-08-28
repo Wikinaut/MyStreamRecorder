@@ -878,9 +878,9 @@ $mailJob = ( $mailto ) ? "(cat $mailFilename;stat -c %s $escFilename) | /usr/sbi
 
 $rmSingleKillJobFile = ";rm -f $killSingleJobFilename $nul";
 
-$killMplayerRecordingCommand = "echo $cmdLine $escFilename; kill \\\$(ps -F --no-heading -C mplayer | grep \\\"" . str_replace( "'", "", $mplayerRecordingCommand ) . "\\\" | awk '{print \\\$2}')";
-$killMplayerRecordingCommand_shell = "echo $cmdLine $escFilename; kill $(ps -F --no-heading -C mplayer | grep \"" . str_replace( "'", "", $mplayerRecordingCommand ) . "\" | awk '{print $2}')";
-$killMplayerPlaybackCommand = "echo $cmdLine; kill \\\$(ps -F --no-heading -C mplayer | grep \\\"" . str_replace( "'", "", $mplayerPlaybackCommand ) . "\\\" | awk '{print \\\$2}')";
+$killMplayerRecordingCommand = "kill \\\$(ps -F --no-heading -C mplayer | grep \\\"" . str_replace( "'", "", $mplayerRecordingCommand ) . "\\\" | awk '{print \\\$2}')";
+$killMplayerRecordingCommand_shell = "echo $cmdLine; kill $(ps -F --no-heading -C mplayer | grep \"" . str_replace( "'", "", $mplayerRecordingCommand ) . "\" | awk '{print $2}')";
+$killMplayerPlaybackCommand = "kill \\\$(ps -F --no-heading -C mplayer | grep \\\"" . str_replace( "'", "", $mplayerPlaybackCommand ) . "\\\" | awk '{print \\\$2}')";
 
 switch ( true ) {
 

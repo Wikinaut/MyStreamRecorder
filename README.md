@@ -45,7 +45,6 @@ or have "at" started in Runlevel 5 (see http://www.simplehelp.net/2009/05/04/how
 ```
 "atq" to list the queued "at" commands
 "atrm" to remove queued "at" command
-"fuser -k <fn>" to kill record and playback jobs which own streamfile <fn>
 "postfix" (started) if you want to use the --mailto option for e-mail notifications after recording
 ```
 

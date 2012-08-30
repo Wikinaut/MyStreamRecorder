@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.34 20120829" );
+define( "VERSION", "v2.40 20120830" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -61,7 +61,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *			personal settings .rec.ini
  *	20120805 2.31	search path for global and personal ini files (see $iniFilePathnames)
  *	20120814 2.33	show search path; added --longhelp option, refactored help handling
- * 	20120829 2.34	killing only the specific (recording, playback) jobs
+ * 	20120830 2.40	killing only the specific (recording, playback) jobs
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -101,7 +101,7 @@ function error( $text, $type = false ) {
 	global $error;
 	$type = ( !$type ) ? "Error" : "Info";
 	$newLine = ( $error ) ? "\n" : "";
-	$error .= $newLine . PROGRAM_NAME . " --$type: $text\n";
+	$error .= $newLine . PROGRAM_NAME . " -- $type: $text\n";
 }
 
 # check the pre-requisites
@@ -455,7 +455,6 @@ if ( isset( $settings["mailto"] ) ) {
 
 }
 
-
 # $killAllJobsFilename = "$workingDirectory/kill-all-streamrecorder-jobs.sh";
 $killAllJobsFilename = "$workingDirectory/killall.sh";
 
@@ -771,7 +770,7 @@ if ( $beep && file_exists( $startMessageSound ) ) {
 if ( $beep && file_exists( $stopMessageSound ) ) {
 	$stopRecordingHook = "; nohup mplayer -ao alsa $stopMessageSound $nul & ";
 } else {
-	$stopRecordingHook = "";
+	$stopRecordingHook = ";";
 }
 
 $escFilename = escapeshellarg( $fileName );
@@ -879,7 +878,7 @@ $mailJob = ( $mailto ) ? "(cat $mailFilename;stat -c %s $escFilename) | /usr/sbi
 $rmSingleKillJobFile = ";rm -f $killSingleJobFilename $nul";
 
 $killMplayerRecordingCommand = "kill \\\$(ps -F --no-heading -C mplayer | grep \\\"" . str_replace( "'", "", $mplayerRecordingCommand ) . "\\\" | awk '{print \\\$2}')";
-$killMplayerRecordingCommand_shell = "echo $cmdLine; kill $(ps -F --no-heading -C mplayer | grep \"" . str_replace( "'", "", $mplayerRecordingCommand ) . "\" | awk '{print $2}')";
+$killMplayerRecordingCommand_shell = "echo \"now stopping $cmdLine $escFilename\"; kill $(ps -F --no-heading -C mplayer | grep \"" . str_replace( "'", "", $mplayerRecordingCommand ) . "\" | awk '{print $2}')";
 $killMplayerPlaybackCommand = "kill \\\$(ps -F --no-heading -C mplayer | grep \\\"" . str_replace( "'", "", $mplayerPlaybackCommand ) . "\\\" | awk '{print \\\$2}')";
 
 switch ( true ) {

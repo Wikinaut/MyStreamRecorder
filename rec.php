@@ -301,8 +301,7 @@ if ( !$iniFileFound ) {
 	error( "No inifile found." );
 }
 
-// print_r( $settings );
-// die();
+// var_dump( $settings );
 
 $stations = $settings["stations"];
 

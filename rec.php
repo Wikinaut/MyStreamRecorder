@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.40 20120830" );
+define( "VERSION", "v2.41 20121024" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -62,6 +62,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *	20120805 2.31	search path for global and personal ini files (see $iniFilePathnames)
  *	20120814 2.33	show search path; added --longhelp option, refactored help handling
  * 	20120830 2.40	killing only the specific (recording, playback) jobs
+ *	20121024 2.41	changed label position before stationname in the filename
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -404,7 +405,7 @@ default:
 
 $label = str_replace( " ", "_", trim( $label, " _-." ) );
 if ( strlen( $label ) > 0 ) {
-	$label = "_" . $label;
+	$label = $label . "_";
 }
 
 # check the working directory. Files in it need to be executable,
@@ -554,13 +555,13 @@ if ( !empty( $argv[1] ) ) {
 		$streamUrl = $preprogrammed["streams"][0]["url"];
 		$stationName = $preprogrammed["station"][1]; // use the first ["station"][1], not the program P number ["station"][0]
 		if ( !$fn ) {
-			$fn = sanitize_filename( $stationName . $label ) . "." . $preprogrammed["streams"][0]["encodingtype"];
+			$fn = sanitize_filename( $label . $stationName ) . "." . $preprogrammed["streams"][0]["encodingtype"];
 		}
 	} else if ( preg_match( "!^http://!", $station ) ) {
 		// FIXME
 		// check whether streamUrl exists
 		$streamUrl = $station;
-		$stationName = sanitize_filename( str_replace( array( "http://", basename( $streamUrl ), "/", "." ), array( "", "", "-", "-" ), $station ) . $label ) . basename( $streamUrl );
+		$stationName = sanitize_filename( $label . str_replace( array( "http://", basename( $streamUrl ), "/", "." ), array( "", "", "-", "-" ), $station ) ) . basename( $streamUrl );
 		if ( !$fn ) {
 			$fn = $stationName;
 		}

@@ -40,6 +40,7 @@ or have "ntp" started in Runlevel 5; make sure to have a working ntp server defi
 $ rcatd start
 ```
 or have "at" started in Runlevel 5 (see http://www.simplehelp.net/2009/05/04/how-to-schedule-tasks-on-linux-using-the-at-command/)
+(if you have OpenSuse 12.2 read https://github.com/Wikinaut/MyStreamRecorder/wiki to fix an atd problem)
 
 * required system commands:
 ```

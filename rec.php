@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.42 20121221" );
+define( "VERSION", "v2.50 20130316" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -63,6 +63,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *	20120814 2.33	show search path; added --longhelp option, refactored help handling
  * 	20120830 2.40	killing only the specific (recording, playback) jobs
  *	20121024 2.41	changed label position before stationname in the filename
+ *  20130316 2.50 add mp32wav.sh script; add df -h output to record-success confirmation mail
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream

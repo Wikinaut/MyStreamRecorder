@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.41 20121024" );
+define( "VERSION", "v2.42 20121221" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -873,7 +873,7 @@ if ( !$noPlayback ) switch ( true ) {
 $killRecordingAndPlaybackStopJob = "";
 $recording_and_playbackATStopJobid = "";
 
-$mailJob = ( $mailto ) ? "(cat $mailFilename;stat -c %s $escFilename) | /usr/sbin/sendmail -t $nul; rm -f $mailFilename " : "";
+$mailJob = ( $mailto ) ? "(cat $mailFilename;stat -c %s $escFilename;df -h) | /usr/sbin/sendmail -t $nul; rm -f $mailFilename " : "";
 
 $rmSingleKillJobFile = ";rm -f $killSingleJobFilename $nul";
 

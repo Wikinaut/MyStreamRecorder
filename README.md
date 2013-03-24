@@ -45,6 +45,11 @@ or have "at" started in Runlevel 5 (see http://www.simplehelp.net/2009/05/04/how
 * required system commands:
 ```
 "atq" to list the queued "at" commands
+atq gives you the <id> and some more
+use the <id> with at -c as below (id is the first number of the atq result)
+at -c id
+to give you a huge answer about what will be executed and the environment, so look
+at the last part of the answer which will be the script you type.
 "atrm" to remove queued "at" command
 "postfix" (started) if you want to use the --mailto option for e-mail notifications after recording
 ```

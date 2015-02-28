@@ -1,0 +1,6 @@
+alias rec="php /work/MyStreamRecorder/rec.php -d/mp3"
+alias stop="php /work/MyStreamRecorder/rec.php -s -d/mp3"
+alias play="mplayer"
+alias list="ls -ls /mp3 ~/Musik"
+alias bye="sudo shutdown -Fh now"
+alias dir="ls -ls"

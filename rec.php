@@ -1,5 +1,5 @@
 <?PHP
-define( "VERSION", "v2.50 20130316" );
+define( "VERSION", "v2.51 20140424" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
 /***
@@ -63,7 +63,8 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *	20120814 2.33	show search path; added --longhelp option, refactored help handling
  * 	20120830 2.40	killing only the specific (recording, playback) jobs
  *	20121024 2.41	changed label position before stationname in the filename
- *  20130316 2.50 add mp32wav.sh script; add df -h output to record-success confirmation mail
+ *      20130316 2.50   add mp32wav.sh script; add df -h output to record-success confirmation mail
+ *      20140424 2.51   auto-create working directory if this does not exist
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -429,8 +430,11 @@ default:
 }
 
 if ( !file_exists( $workingDirectory ) ) {
-	error( "working directory '$workingDirectory' does not exist." ) ;
-	$workingDirectory = false;
+	error( "working directory '$workingDirectory' does not exist, creating it now." );
+	system( "mkdir -p " . escapeshellarg( $workingDirectory ), $ret );
+	if ( !$ret ) {
+          $workingDirectory = false;
+        }
 }
 
 if ( isset( $settings["mailto"] ) ) {
@@ -817,7 +821,8 @@ if ( $record ) {
 # but not seconds resolution, the plackback job may otherwise be started before the record job.
 # we add a safe guard of 60 seconds.
 
-$mplayerPlaybackCommand = "mplayer -ao alsa " . escapeshellarg( $streamUrl );
+// $mplayerPlaybackCommand = "mplayer -ao alsa " . escapeshellarg( $streamUrl );
+$mplayerPlaybackCommand = "mplayer " . escapeshellarg( $streamUrl );
 
 if ( !$noPlayback ) switch ( true ) {
 

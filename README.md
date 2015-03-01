@@ -21,9 +21,13 @@ php rec.php
 ```
 for detailed help.
 
-# Requirements
 
-see also file rec.php
+# Installation
+see INSTALL.md
+
+
+# Requirements
+see also rec.php
 
 * PHP 5.3.0+ (for getopt --long-options)
 

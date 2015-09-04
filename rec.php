@@ -65,6 +65,7 @@ define( "PROGRAM_NAME", "MyStreamRecorder" );
  *	20121024 2.41	changed label position before stationname in the filename
  *      20130316 2.50   add mp32wav.sh script; add df -h output to record-success confirmation mail
  *      20140424 2.51   auto-create working directory if this does not exist
+ *      20150827 2.52   add -allow-dangerous-playlist-parsing for mplayer
  *
  *	requires	PHP 5.3.0+ (for getopt --long-options)
  * 	requires	mplayer for recording a stream
@@ -547,7 +548,7 @@ default:
 }
 
 if ( empty( $startTime ) ) {
-	error( "Options must be presented as the first parameters in the command line, immediately following the program name." );
+	error( "Options must be presented as first parameters in the command line, then followed by program name and then recording time." );
 }
 
 $playbackInfo = ( $playbackStartDelay <= 0 ) ? "Playback uses an extra stream and starts about " . -$playbackStartDelay . " seconds before starttime" : "Playback starts about $playbackStartDelay seconds after the recording";
@@ -793,7 +794,7 @@ $playbackJobid = "";
 $playbackATStartJobid = "";
 $recordingATStartJobid = "";
 
-$mplayerRecordingCommand = "mplayer -dumpstream -dumpfile $escFilename " . escapeshellarg( $streamUrl );
+$mplayerRecordingCommand = "mplayer -allow-dangerous-playlist-parsing -dumpstream -dumpfile $escFilename " . escapeshellarg( $streamUrl );
 
 if ( $record ) {
 	if ( $immediateStart ) {
@@ -822,7 +823,7 @@ if ( $record ) {
 # we add a safe guard of 60 seconds.
 
 // $mplayerPlaybackCommand = "mplayer -ao alsa " . escapeshellarg( $streamUrl );
-$mplayerPlaybackCommand = "mplayer " . escapeshellarg( $streamUrl );
+$mplayerPlaybackCommand = "mplayer -allow-dangerous-playlist-parsing " . escapeshellarg( $streamUrl );
 
 if ( !$noPlayback ) switch ( true ) {
 
@@ -837,7 +838,7 @@ if ( !$noPlayback ) switch ( true ) {
 		break;
 
 	case ( $record && !$immediateStart && ( $playbackStartDelay > 0 ) ):
-		$mplayerPlaybackCommand = "mplayer -ao alsa $escFilename"; // playback while the file is recorded
+		$mplayerPlaybackCommand = "mplayer -allow-dangerous-playlist-parsing -ao alsa $escFilename"; // playback while the file is recorded
 		exec( "echo \"nohup $mplayerPlaybackCommand &\" \
 			| at " . date( $atDateformat, $startTime+$playbackStartDelay ) . " 2>&1;\n",
 			$out2

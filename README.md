@@ -23,7 +23,7 @@ for detailed help.
 
 
 # Installation
-see INSTALL.md
+see [INSTALL.md](INSTALL.md)
 
 
 # Requirements

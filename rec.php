@@ -114,7 +114,7 @@ $out = array();
 exec( "which mplayer 2>/dev/null", $out );
 if ( !isset( $out[0] ) ) {
 	error ("\"mplayer\" is required for playing and recording streams but cannot be found on this system.
-On OpenSuse use YaST to install this program." );
+Use `sudo apt install mplayer` to install this program." );
 	$mplayer = false;
 } else {
 	$mplayer = $out[0];
@@ -124,7 +124,7 @@ $out = array();
 exec( "which at 2>/dev/null", $out );
 if ( !isset( $out[0] ) ) {
 	error( "\"at\" task manager is required to start and stop scheduled jobs but cannot be found on this system.
-On OpenSuse use YaST to install this program." );
+Use `sudo apt install at` to install this program." );
 	$at = false;
 } else {
 	$at = $out[0];
@@ -134,7 +134,7 @@ $out = array();
 exec( "pidof atd 2>/dev/null", $out );
 if ( !isset( $out[0] ) ) {
 	error( "\"atd\" task manager daemon is required to be running but is not yet started on this system.
-On OpenSuse run \"# rcatd start\" and/or use YaST to activate atd for runlevel 2, 3, 5." );
+Run \"# rcatd start\" and activate atd for runlevel 2, 3, 5." );
 	$atdPid = false;
 } else {
 	$atdPid = $out[0];

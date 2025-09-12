@@ -920,9 +920,9 @@ switch ( true ) {
 			$out3
 		);
 
-		print_r($out3);
 		### TODO
 		### FIXME
+		### print_r($out3);
 		### if ( $out3[0] === "at: refusing to create job destined in the past" )....
 
 		preg_match( "!^job (\d+)!u", $out3[1], $res3 );

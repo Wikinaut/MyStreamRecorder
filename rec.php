@@ -2,6 +2,7 @@
 define( "VERSION", "v2.51 20140424" );
 define( "PROGRAM_NAME", "MyStreamRecorder" );
 
+date_default_timezone_set('Europe/Berlin');
 /***
  *
  *	My Stream Recorder
@@ -918,6 +919,12 @@ switch ( true ) {
 			| at " . date( $atDateformat, $stopTime ) . " 2>&1",
 			$out3
 		);
+
+		print_r($out3);
+		### TODO
+		### FIXME
+		### if ( $out3[0] === "at: refusing to create job destined in the past" )....
+
 		preg_match( "!^job (\d+)!u", $out3[1], $res3 );
 		$recording_and_playbackATStopJobid = $res3[1];
 		$killRecordingAndPlaybackStopJob = "atrm $recording_and_playbackATStopJobid $nul";
